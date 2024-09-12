@@ -156,7 +156,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(100);
+            delay(200);
+          }
+          for (int pixel =  LED_LEN_1; pixel >0; pixel--){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, 0, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(200);
           }
         } else {
           //if duration is short, spark fast -> acende todos e muda o brilho
@@ -165,7 +172,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(10);
+            delay(50);
+          }
+          for (int pixel = LED_LEN_1; pixel > 0; pixel--){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, 0, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(50);
           }
         }
       }
@@ -179,7 +193,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(100);
+            delay(200);
+          }
+          for (int pixel = LED_LEN_1; pixel > 0; pixel--){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, blue, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(200);
           }
         } else {
           //if duration is short, spark fast -> acende todos e muda o brilho
@@ -188,7 +209,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(10);
+            delay(50);
+          }
+          for (int pixel = LED_LEN_1; pixel > 0; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, blue, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(50);
           }
         }
       }
@@ -210,7 +238,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, green, 0));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(100);
+            delay(200);
+          }
+          for (int pixel = LED_LEN_1; pixel > 0; pixel--){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, green, 0));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, green, 0));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(200);
           }
         } else {
           //if duration is short, spark fast -> acende todos e muda o brilho
@@ -219,7 +254,14 @@ void defineColorBass(float octave, float pitch, float duration){
             NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(173, green, 47));
             NeoPixel_1.show();
             NeoPixel_2.show();
-            delay(10);
+            delay(50);
+          }
+          for (int pixel = LED_LEN_1; pixel > 0; pixel--){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(173, green, 47));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(173, green, 47));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(50);
           }
         }
       }
