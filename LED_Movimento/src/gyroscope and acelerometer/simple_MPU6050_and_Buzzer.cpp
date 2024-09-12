@@ -10,12 +10,26 @@
  */
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include "pitches.h"
 
 // ESP32 pin GPIO18 connected to piezo buzzer
 #define BUZZZER_PIN_1  25
 #define BUZZZER_PIN_2  26
+
+#define LED_PIN_1 33
+#define LED_LEN_1 19
+
+#define LED_PIN_2 32 //D32
+#define LED_LEN_2 19
+
+#define LED_PIN_3 27 //D27
+#define LED_LEN_3 22
+
+#define LED_PIN_4 23 //D23
+#define LED_LEN_4 22
+
 
 struct note
 {
@@ -40,6 +54,12 @@ struct note bassCurrentNote = {0, 0, 0};
 
 // MPU6050 sensor object
 Adafruit_MPU6050 mpu;
+
+// LED strip object
+Adafruit_NeoPixel NeoPixel_1(LED_LEN_1, LED_PIN_1, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel NeoPixel_2(LED_LEN_2, LED_PIN_2, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel NeoPixel_3(LED_LEN_3, LED_PIN_3, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel NeoPixel_4(LED_LEN_4, LED_PIN_4, NEO_GRB + NEO_KHZ800);
 
 /**
  * @brief Calculates the duration of a note based on accelerometer data.
@@ -105,7 +125,116 @@ void defineBassNote(float totalAcc, float totalSpin){
   bassCurrentNote.pitch = harmonics[melodyCurrentNote.pitch][random(0, 2)];
   bassCurrentNote.octave = octave;
   bassCurrentNote.duration = defineNoteDuration(totalAcc);
+
 }
+
+void defineColorMelody(float octave, float pitch, float duration){
+  //depending os melody note octave and pitch, change the color of the leds in strip 3 and 4
+  //if duration is long, slow rainbow -> acende todos e muda a cor um por um
+
+  //if duration is short, fast rainbow -> acende todos e muda a cor um por um
+
+  //if low pitch, invert rainbow
+  //if high pitch, normal rainbow
+
+  //refresh strip 2
+  NeoPixel_3.show();
+  NeoPixel_4.show();
+}
+
+void defineColorBass(float octave, float pitch, float duration){
+  //dependig on sensor 2 speed, change the color of the leds in strips 1 and 2
+  if(octave <= 1){ 
+    //if first octave, colors in blue
+    if(pitch <=3){
+      //if low pitch, dark colors
+      for (int blue = 0; blue < 255; blue++) {
+        if(duration > 600){
+          //if duration is long, spark slowly -> acende todos e muda o brilho
+          for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, 0, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(100);
+          }
+        } else {
+          //if duration is short, spark fast -> acende todos e muda o brilho
+           for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, 0, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, 0, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(10);
+          }
+        }
+      }
+    } else if (pitch > 3 && pitch < 7){
+      //if high pitch, light colors
+      for (int blue = 0; blue < 255; blue++) {
+        if(duration > 600){
+          //if duration is long, spark slowly -> acende todos e muda o brilho
+          for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, blue, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(100);
+          }
+        } else {
+          //if duration is short, spark fast -> acende todos e muda o brilho
+           for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, blue, blue));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, blue, blue));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(10);
+          }
+        }
+      }
+    } else {
+        NeoPixel_1.clear();
+        NeoPixel_2.clear();
+        NeoPixel_1.show();
+        NeoPixel_2.show();
+    }
+  } else if (octave == 2){  
+  //if second octave, colors in purple
+      if(pitch <=3){
+      //if low pitch, dark colors
+      for (int green = 0; green < 255; green++) {
+        if(duration > 600){
+          //if duration is long, spark slowly -> acende todos e muda o brilho
+          for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(0, green, 0));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(0, green, 0));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(100);
+          }
+        } else {
+          //if duration is short, spark fast -> acende todos e muda o brilho
+           for (int pixel = 0; pixel < LED_LEN_1; pixel++){
+            NeoPixel_1.setPixelColor(pixel, NeoPixel_1.Color(173, green, 47));
+            NeoPixel_2.setPixelColor(pixel, NeoPixel_2.Color(173, green, 47));
+            NeoPixel_1.show();
+            NeoPixel_2.show();
+            delay(10);
+          }
+        }
+      }
+    } else if (pitch > 3 && pitch < 7){
+      //if high pitch, light colors
+
+    } else {
+      NeoPixel_1.clear();
+      NeoPixel_2.clear();
+      NeoPixel_1.show();
+      NeoPixel_2.show();
+    }
+  }
+}
+
 
 void playNote(sensors_event_t a, sensors_event_t g){
   float totalAcc = sqrt(a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y);
@@ -118,6 +247,13 @@ void playNote(sensors_event_t a, sensors_event_t g){
 
   tone(BUZZZER_PIN_1, bb_scale[melodyCurrentNote.octave][melodyCurrentNote.pitch]);
   tone(BUZZZER_PIN_2, bb_scale[bassCurrentNote.octave][bassCurrentNote.pitch]);
+
+  //colocar a lógica de cores aqui, para utilizar as informações de oitava e pitch de cada buzzer
+  //buzzer 1 -> melodia
+  defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
+
+  //buzzer 2 -> bass
+  defineColorBass(bassCurrentNote.octave, bassCurrentNote.pitch, bassCurrentNote.duration);
 }
 
 /**
@@ -169,12 +305,18 @@ void printMPUData(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
 }
 
 
+
+
 void setup(void) {
   Serial.begin(115200);
   while (!Serial)
     delay(10);
 
   setMPUConfigurations();
+  NeoPixel_1.begin();
+  NeoPixel_2.begin();
+  NeoPixel_3.begin();
+  NeoPixel_4.begin();
   delay(100);
 }
 
