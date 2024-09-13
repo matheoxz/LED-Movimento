@@ -30,7 +30,6 @@
 #define LED_PIN_4 23 //D23
 #define LED_LEN_4 22
 
-
 struct note
 {
   int pitch;
@@ -52,8 +51,9 @@ int noteDuration[] = {125, 125, 125, 125, 125, 125, 125, 125, 250, 250, 250, 250
 struct note melodyCurrentNote = {0, 3, 0};
 struct note bassCurrentNote = {0, 0, 0};
 
-// MPU6050 sensor object
-Adafruit_MPU6050 mpu;
+// MPU6050 sensor objects
+Adafruit_MPU6050 mpu1;
+Adafruit_MPU6050 mpu2;
 
 // LED strip object
 Adafruit_NeoPixel NeoPixel_1(LED_LEN_1, LED_PIN_1, NEO_GRB + NEO_KHZ800);
@@ -278,24 +278,25 @@ void defineColorBass(float octave, float pitch, float duration){
 }
 
 
-void playNote(sensors_event_t a, sensors_event_t g){
-  float totalAcc = sqrt(a.acceleration.x * a.acceleration.x + a.acceleration.y * a.acceleration.y);
-  float totalSpin = sqrt(g.gyro.x * g.gyro.x + g.gyro.y * g.gyro.y);
-  defineMelodyNote(totalAcc, totalSpin);
-  defineBassNote(totalAcc, totalSpin);
-  Serial.println(melodyCurrentNote.duration);
-  Serial.println(melodyCurrentNote.octave);
-  Serial.println(melodyCurrentNote.pitch);
+void playNote(sensors_event_t a1, sensors_event_t g1, sensors_event_t a2, sensors_event_t g2){
+  float totalAcc1 = sqrt(a1.acceleration.x * a1.acceleration.x + a1.acceleration.y * a1.acceleration.y);
+  float totalAcc2 = sqrt(a2.acceleration.x * a2.acceleration.x + a2.acceleration.y * a2.acceleration.y);
+  float totalSpin1 = sqrt(g1.gyro.x * g1.gyro.x + g1.gyro.y * g1.gyro.y);
+  float totalSpin2 = sqrt(g2.gyro.x * g2.gyro.x + g2.gyro.y * g2.gyro.y);
 
+  defineMelodyNote(totalAcc1, totalSpin1);
+  defineBassNote(totalAcc2, totalSpin2);
+  //buzzer 1 -> melodia
   tone(BUZZZER_PIN_1, bb_scale[melodyCurrentNote.octave][melodyCurrentNote.pitch]);
+  //buzzer 2 -> bass
   tone(BUZZZER_PIN_2, bb_scale[bassCurrentNote.octave][bassCurrentNote.pitch]);
 
   //colocar a lógica de cores aqui, para utilizar as informações de oitava e pitch de cada buzzer
   //buzzer 1 -> melodia
-  defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
+  //defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
 
   //buzzer 2 -> bass
-  defineColorBass(bassCurrentNote.octave, bassCurrentNote.pitch, bassCurrentNote.duration);
+  //defineColorBass(bassCurrentNote.octave, bassCurrentNote.pitch, bassCurrentNote.duration);
 }
 
 /**
@@ -307,19 +308,33 @@ void playNote(sensors_event_t a, sensors_event_t g){
  * This function initializes the MPU6050 sensor and checks if it is found. If the sensor is not found, the function will enter an infinite loop.
  */
 void setMPUConfigurations(){
-  Serial.println("Adafruit MPU6050 test!");
-
-  if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
-    while (1) {
-      delay(10);
+  if (!mpu1.begin(0x68)) {
+        Serial.println("Failed to find MPU6050 chip 1");
+        while (1) {
+            delay(10);
+        }
     }
-  }
-  Serial.println("MPU6050 Found!");
+    Serial.println("MPU6050 1 Found!");
 
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
+    // Initialize the second MPU6050
+    if (!mpu2.begin(0x69)) {
+        Serial.println("Failed to find MPU6050 chip 2");
+        while (1) {
+            delay(10);
+        }
+    }
+    Serial.println("MPU6050 2 Found!");
+
+    // Set up the sensors
+    mpu1.setAccelerometerRange(MPU6050_RANGE_8_G);
+    mpu1.setGyroRange(MPU6050_RANGE_500_DEG);
+    mpu1.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
+    mpu2.setAccelerometerRange(MPU6050_RANGE_8_G);
+    mpu2.setGyroRange(MPU6050_RANGE_500_DEG);
+    mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
+    delay(100);
 }
 
 /**
@@ -346,9 +361,6 @@ void printMPUData(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   Serial.println(temp.temperature);
 }
 
-
-
-
 void setup(void) {
   Serial.begin(115200);
   while (!Serial)
@@ -364,13 +376,16 @@ void setup(void) {
 
 void loop() {
   /* Get new sensor events with the readings */
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
+  sensors_event_t a1, g1, temp1;
+  sensors_event_t a2, g2, temp2;
+  mpu1.getEvent(&a1, &g1, &temp1);
+  mpu2.getEvent(&a2, &g2, &temp2);
 
   /*sets a pitch to the buzzer according to the rotation on the gyroscope*/
-  playNote(a, g);
+  playNote(a1, g1, a2, g2);
 
-  printMPUData(a, g, temp);
+  printMPUData(a1, g1, temp1);
+  printMPUData(a2, g2, temp2);
   
   delay(melodyCurrentNote.duration);
   noTone(BUZZZER_PIN_1);
