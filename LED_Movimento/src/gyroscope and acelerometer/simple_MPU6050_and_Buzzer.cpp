@@ -52,17 +52,18 @@ Adafruit_MPU6050 mpu2;
 // LED strip objects
 Adafruit_NeoPixel NeoPixel_B(LED_LEN_BASS, LED_PIN_BASS, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel NeoPixel_M(LED_LEN_MELODY, LED_PIN_MELODY, NEO_GRB + NEO_KHZ800);
+int pixelMelody = 0, pixelBass = 0;
+
 
 /**
- * @brief Calculates the duration of a note based on accelerometer data.
+ * @brief Determines the duration of a note based on the total acceleration.
  *
- * This function takes an accelerometer event as input and calculates the 
- * total acceleration in the x and y directions. Based on the magnitude 
- * of the total acceleration, it returns a duration for a note from a 
- * predefined set of durations.
+ * This function takes the total acceleration as input and returns a note duration
+ * based on predefined ranges of acceleration values. The note duration is selected
+ * randomly from specific ranges within the `noteDuration` array.
  *
- * @param a The accelerometer event containing acceleration data.
- * @return The duration of the note based on the total acceleration.
+ * @param totalAcc The total acceleration value.
+ * @return The duration of the note, selected randomly from predefined ranges.
  */
 int defineNoteDuration (float totalAcc){
   if (totalAcc > 0.5 and totalAcc < 0.75) return noteDuration[random(18, 19)];
@@ -71,12 +72,14 @@ int defineNoteDuration (float totalAcc){
 }
 
 /**
- * Calculates the current octave and note based on the gyroscope readings, and returns the corresponding pitch value from the Bb Major scale.
+ * @brief Adjusts the melody note based on accelerometer and gyroscope readings.
  *
- * The octave value ranges from 0 to 5, and the note value ranges from 0 to 6. These values are updated based on the X and Y gyroscope readings, respectively.
+ * This function modifies the current melody note's octave and pitch based on the 
+ * provided total acceleration and total spin values. The adjustments are made 
+ * according to specific thresholds and random variations.
  *
- * @param g The gyroscope event data.
- * @return The pitch value from the Bb Major scale corresponding to the current octave and note.
+ * @param totalAcc The total acceleration value from the accelerometer.
+ * @param totalSpin The total spin value from the gyroscope.
  */
 void defineMelodyNote(float totalAcc, float totalSpin){
   int octave = melodyCurrentNote.octave;
@@ -101,6 +104,18 @@ void defineMelodyNote(float totalAcc, float totalSpin){
   melodyCurrentNote.duration = defineNoteDuration(totalAcc);
 }
 
+/**
+ * @brief Defines the bass note based on the total acceleration and total spin.
+ *
+ * This function adjusts the octave and pitch of the bass note according to the 
+ * provided total acceleration and total spin values. The pitch is selected from 
+ * a predefined set of harmonics based on the current melody note's pitch. The 
+ * octave is adjusted based on the total spin value, and the duration of the note 
+ * is determined by the total acceleration.
+ *
+ * @param totalAcc The total acceleration value used to define the note duration.
+ * @param totalSpin The total spin value used to adjust the octave.
+ */
 void defineBassNote(float totalAcc, float totalSpin){
   int harmonics[8][3] = {{2, 4, 6}, {3, 5, 0}, {4, 6, 1}, 
                         {5, 0, 2}, {6, 1, 3}, {0, 2, 4}, 
@@ -117,60 +132,37 @@ void defineBassNote(float totalAcc, float totalSpin){
   bassCurrentNote.pitch = harmonics[melodyCurrentNote.pitch][random(0, 2)];
   bassCurrentNote.octave = octave;
   bassCurrentNote.duration = defineNoteDuration(totalAcc);
-
 }
 
 void defineColorMelody(float octave, float pitch, float duration){
-  //depending os melody note octave and pitch, change the color of the leds in strip MELODY
-  //if low pitch, invert rainbow
+  if(pixelMelody == LED_LEN_MELODY || pixelMelody == 0){
+      Serial.println("Cleaning Melody LED Strip");
+      NeoPixel_M.clear();
+      NeoPixel_M.show();
+      pixelMelody = 0;
+  }
+
   if (pitch <= 3){
-    NeoPixel_M.clear();
+    Serial.println("LOW Pitch LED Color");
+    NeoPixel_M.rainbow(pixelMelody, -1, 255, 200, 1);
     NeoPixel_M.show();
-    //if duration is long, static rainbow -> acende todos devagar e fica ligado
-    if (duration >= 500){
-      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
-        NeoPixel_M.rainbow(pixel, -1, 255, 200, 1);
-        NeoPixel_M.show();
-        delay(300);
-      }
-    //if duration is short, fast rainbow -> acende todos rápido e fica ligado
-    } else{
-      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
-        NeoPixel_M.rainbow(pixel, -1, 255, 200, 1);
-        NeoPixel_M.show();
-        delay(50);
-      }
-    }  
-  //if high pitch, normal rainbow
+    delay(melodyCurrentNote.duration);
+    pixelMelody++;
   } else if (pitch > 3 && pitch < 7){
+    Serial.println("HIGH Pitch LED Color");
+    NeoPixel_M.rainbow(pixelMelody, pixelMelody, 255, 200, 1);
+    NeoPixel_M.show();
+    delay(melodyCurrentNote.duration);
+    pixelMelody++;
+  } else {
+    Serial.println("SILENCE COLOR");
     NeoPixel_M.clear();
     NeoPixel_M.show();
-    int count = 0;
-    //if duration is long, slow rainbow -> acende todos e muda a cor um por um
-    if (duration >= 500){
-      count = 0;
-      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
-        NeoPixel_M.rainbow(pixel, count, 255, 200, 1);
-        NeoPixel_M.show();
-        delay(300);
-        count++;
-      }
-    //if duration is short, fast rainbow -> acende todos e muda a cor um por um
-    } else{
-      count = 0;
-      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
-        NeoPixel_M.rainbow(pixel, count, 255, 200, 1);
-        NeoPixel_M.show();
-        delay(50);
-        count++;
-      }
-    }
-  } else {
     //acende tudo ao mesmo tempo e deixa aceso em branco
     for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
         NeoPixel_M.setPixelColor(pixel, NeoPixel_M.Color(255, 255, 255));
-        delay(100);
-      }
+        delay(melodyCurrentNote.duration/LED_LEN_MELODY);
+    }
     NeoPixel_M.show();
   }
 }
@@ -328,7 +320,7 @@ void playNote(sensors_event_t a1, sensors_event_t g1, sensors_event_t a2, sensor
 
   //colocar a lógica de cores aqui, para utilizar as informações de oitava e pitch de cada buzzer
   //buzzer 1 -> melodia
-  //defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
+  defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
 
   //buzzer 2 -> bass
   //defineColorBass(bassCurrentNote.octave, bassCurrentNote.pitch, bassCurrentNote.duration);
@@ -419,10 +411,10 @@ void loop() {
   /*sets a pitch to the buzzer according to the rotation on the gyroscope*/
   playNote(a1, g1, a2, g2);
 
-  printMPUData(a1, g1, temp1);
-  printMPUData(a2, g2, temp2);
+  //printMPUData(a1, g1, temp1);
+  //printMPUData(a2, g2, temp2);
   
-  delay(melodyCurrentNote.duration);
+  //delay(melodyCurrentNote.duration);
   noTone(BUZZZER_PIN_1);
   noTone(BUZZZER_PIN_2);
 }
