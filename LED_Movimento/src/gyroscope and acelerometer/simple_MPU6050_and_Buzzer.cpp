@@ -201,7 +201,7 @@ void defineColorBass(float octave, float pitch, float duration){
     }
   } else if (octave == 2){  
   //if second octave, colors in purple
-      if(pitch <=3){
+    if(pitch <=3){
       //if low pitch, dark colors
       for (int green = 0; green < 255; green++) {
         if(duration > 600){
@@ -219,6 +219,35 @@ void defineColorBass(float octave, float pitch, float duration){
         } else {
           //if duration is short, spark fast -> acende todos e muda o brilho
            for (int pixel = 0; pixel < LED_LEN_BASS; pixel++){
+            NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(0, green, 0));
+            NeoPixel_B.show();
+            delay(50);
+          }
+          for (int pixel = LED_LEN_BASS; pixel > 0; pixel--){
+            NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(0, green, 0));
+            NeoPixel_B.show();
+            delay(50);
+          }
+        }
+      }
+    } else if (pitch > 3 && pitch < 7){
+      //if high pitch, light colors
+      for (int green = 0; green < 255; green++) {
+        if(duration > 600){
+          //if duration is long, spark slowly -> acende todos e muda o brilho
+          for (int pixel = 0; pixel < LED_LEN_BASS; pixel++){
+            NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(173, green, 47));
+            NeoPixel_B.show();
+            delay(200);
+          }
+          for (int pixel = LED_LEN_BASS; pixel > 0; pixel--){
+            NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(173, green, 47));
+            NeoPixel_B.show();
+            delay(200);
+          }
+        } else {
+          //if duration is short, spark fast -> acende todos e muda o brilho
+           for (int pixel = 0; pixel < LED_LEN_BASS; pixel++){
             NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(173, green, 47));
             NeoPixel_B.show();
             delay(50);
@@ -230,9 +259,6 @@ void defineColorBass(float octave, float pitch, float duration){
           }
         }
       }
-    } else if (pitch > 3 && pitch < 7){
-      //if high pitch, light colors
-
     } else {
       NeoPixel_B.clear();
       NeoPixel_B.show();
