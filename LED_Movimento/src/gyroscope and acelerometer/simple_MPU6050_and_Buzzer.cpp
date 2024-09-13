@@ -121,20 +121,62 @@ void defineBassNote(float totalAcc, float totalSpin){
 }
 
 void defineColorMelody(float octave, float pitch, float duration){
-  //depending os melody note octave and pitch, change the color of the leds in strip 3 and 4
-  //if duration is long, slow rainbow -> acende todos e muda a cor um por um
-
-  //if duration is short, fast rainbow -> acende todos e muda a cor um por um
-
+  //depending os melody note octave and pitch, change the color of the leds in strip MELODY
   //if low pitch, invert rainbow
+  if (pitch <= 3){
+    NeoPixel_M.clear();
+    NeoPixel_M.show();
+    //if duration is long, static rainbow -> acende todos devagar e fica ligado
+    if (duration >= 500){
+      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
+        NeoPixel_M.rainbow(pixel, -1, 255, 200, 1);
+        NeoPixel_M.show();
+        delay(300);
+      }
+    //if duration is short, fast rainbow -> acende todos rápido e fica ligado
+    } else{
+      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
+        NeoPixel_M.rainbow(pixel, -1, 255, 200, 1);
+        NeoPixel_M.show();
+        delay(50);
+      }
+    }  
   //if high pitch, normal rainbow
-
-  //refresh strip 2
-  NeoPixel_M.show();
+  } else if (pitch > 3 && pitch < 7){
+    NeoPixel_M.clear();
+    NeoPixel_M.show();
+    int count = 0;
+    //if duration is long, slow rainbow -> acende todos e muda a cor um por um
+    if (duration >= 500){
+      count = 0;
+      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
+        NeoPixel_M.rainbow(pixel, count, 255, 200, 1);
+        NeoPixel_M.show();
+        delay(300);
+        count++;
+      }
+    //if duration is short, fast rainbow -> acende todos e muda a cor um por um
+    } else{
+      count = 0;
+      for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
+        NeoPixel_M.rainbow(pixel, count, 255, 200, 1);
+        NeoPixel_M.show();
+        delay(50);
+        count++;
+      }
+    }
+  } else {
+    //acende tudo ao mesmo tempo e deixa aceso em branco
+    for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
+        NeoPixel_M.setPixelColor(pixel, NeoPixel_M.Color(255, 255, 255));
+        delay(100);
+      }
+    NeoPixel_M.show();
+  }
 }
 
 void defineColorBass(float octave, float pitch, float duration){
-  //dependig on sensor 2 speed, change the color of the leds in strips 1 and 2
+  //dependig on sensor 2 speed, change the color of the leds in strips BASS
   if(octave <= 1){ 
     //if first octave, colors in blue
     if(pitch <=3){
@@ -260,7 +302,11 @@ void defineColorBass(float octave, float pitch, float duration){
         }
       }
     } else {
-      NeoPixel_B.clear();
+      //acende tudo ao mesmo tempo e deixa aceso em branco
+      for(int pixel = 0; pixel<LED_LEN_BASS; pixel++){
+        NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(255, 255, 255));
+        delay(100);
+      }
       NeoPixel_B.show();
     }
   }
