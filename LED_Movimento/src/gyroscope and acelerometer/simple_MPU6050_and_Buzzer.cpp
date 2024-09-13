@@ -297,6 +297,7 @@ void playNote(sensors_event_t a1, sensors_event_t g1, sensors_event_t a2, sensor
  * This function initializes the MPU6050 sensor and checks if it is found. If the sensor is not found, the function will enter an infinite loop.
  */
 void setMPUConfigurations(){
+  Serial.println("Searching MPU6050 chip 1");
   if (!mpu1.begin(0x68)) {
         Serial.println("Failed to find MPU6050 chip 1");
         while (1) {
@@ -306,6 +307,7 @@ void setMPUConfigurations(){
     Serial.println("MPU6050 1 Found!");
 
     // Initialize the second MPU6050
+    Serial.println("Searching MPU6050 chip 2");
     if (!mpu2.begin(0x69)) {
         Serial.println("Failed to find MPU6050 chip 2");
         while (1) {
