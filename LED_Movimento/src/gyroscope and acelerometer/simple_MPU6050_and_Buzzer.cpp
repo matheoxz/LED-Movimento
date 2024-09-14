@@ -199,7 +199,7 @@ void playBassLEDs(){
     pixelBass++;
   } else {
     for(int pixel = 0; pixel<LED_LEN_BASS; pixel++){
-        NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(0, 0, 0));
+        NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(255, 0, 0));
     }
     NeoPixel_B.show();
   }
