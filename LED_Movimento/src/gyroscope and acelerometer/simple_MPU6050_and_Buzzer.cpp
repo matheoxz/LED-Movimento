@@ -29,6 +29,7 @@ struct note
   int pitch;
   int octave;
   int duration;
+  bool is_playing;
 };
 
 
@@ -42,8 +43,10 @@ int bb_scale[6][8] = {{NOTE_AS1, NOTE_C1, NOTE_D1, NOTE_DS1, NOTE_F1, NOTE_G1, N
 
 int noteDuration[] = {125, 125, 125, 125, 125, 125, 125, 125, 250, 250, 250, 250, 500, 500, 500, 500, 1000, 1000, 1000, 1500};
 
-struct note melodyCurrentNote = {0, 3, 0};
-struct note bassCurrentNote = {0, 0, 0};
+unsigned long previousMillisMelody = 0, previousMillisBass = 0;
+
+struct note melodyCurrentNote = {0, 3, 0, false};
+struct note bassCurrentNote = {0, 0, 0, false};
 
 // MPU6050 sensor objects
 Adafruit_MPU6050 mpu1;
@@ -97,11 +100,14 @@ void defineMelodyNote(float totalAcc, float totalSpin){
   if (pitch < 0) pitch = abs(pitch);
   while (pitch > 6) pitch -= 3;
 
-  if(totalAcc < 0.5 || totalSpin < 0.5) pitch = 7;
-
   melodyCurrentNote.pitch = pitch;
   melodyCurrentNote.octave = octave;
   melodyCurrentNote.duration = defineNoteDuration(totalAcc);
+
+  if(totalAcc < 0.5 || totalSpin < 0.5) {
+    melodyCurrentNote.pitch = 7;
+    melodyCurrentNote.duration = 50;
+  }
 }
 
 /**
@@ -119,7 +125,7 @@ void defineMelodyNote(float totalAcc, float totalSpin){
 void defineBassNote(float totalAcc, float totalSpin){
   int harmonics[8][3] = {{2, 4, 6}, {3, 5, 0}, {4, 6, 1}, 
                         {5, 0, 2}, {6, 1, 3}, {0, 2, 4}, 
-                        {1, 3, 5}, {7, 7, 7}};
+                        {1, 3, 5}, {0, 2, 4}};
   int octave = bassCurrentNote.octave;
   int pitch = bassCurrentNote.pitch;
 
@@ -131,41 +137,74 @@ void defineBassNote(float totalAcc, float totalSpin){
   
   bassCurrentNote.pitch = harmonics[melodyCurrentNote.pitch][random(0, 2)];
   bassCurrentNote.octave = octave;
-  bassCurrentNote.duration = defineNoteDuration(totalAcc);
+  bassCurrentNote.duration = defineNoteDuration(totalAcc) * 2;
+
+  if(totalAcc < 0.5 || totalSpin < 0.5) {
+    bassCurrentNote.pitch = 7;
+    bassCurrentNote.duration = 50;
+  }
 }
 
-void defineColorMelody(float octave, float pitch, float duration){
-  if(pixelMelody == LED_LEN_MELODY || pixelMelody == 0){
-      Serial.println("Cleaning Melody LED Strip");
-      NeoPixel_M.clear();
-      NeoPixel_M.show();
+void playMelodyLEDs(){
+  if(pixelMelody == LED_LEN_MELODY){
       pixelMelody = 0;
   }
 
-  if (pitch <= 3){
-    Serial.println("LOW Pitch LED Color");
-    NeoPixel_M.rainbow(pixelMelody, -1, 255, 200, 1);
+  if (melodyCurrentNote.pitch < 7){
+    switch (melodyCurrentNote.duration){
+    case 250:
+      NeoPixel_M.rainbow(pixelMelody, -1 , 255, 200, 1);
+      break;
+    case 500:
+      NeoPixel_M.rainbow(pixelMelody, 1 , 255, 200, 1);
+      break;
+    case 1000:
+      NeoPixel_M.rainbow(pixelMelody, 2 , 255, 200, 1);
+      break;    
+    default:
+      NeoPixel_M.rainbow(pixelMelody, 3 , 255, 200, 1);
+      break;
+    }
     NeoPixel_M.show();
-    delay(melodyCurrentNote.duration);
-    pixelMelody++;
-  } else if (pitch > 3 && pitch < 7){
-    Serial.println("HIGH Pitch LED Color");
-    NeoPixel_M.rainbow(pixelMelody, pixelMelody, 255, 200, 1);
-    NeoPixel_M.show();
-    delay(melodyCurrentNote.duration);
     pixelMelody++;
   } else {
-    Serial.println("SILENCE COLOR");
-    NeoPixel_M.clear();
-    NeoPixel_M.show();
-    //acende tudo ao mesmo tempo e deixa aceso em branco
     for(int pixel = 0; pixel<LED_LEN_MELODY; pixel++){
         NeoPixel_M.setPixelColor(pixel, NeoPixel_M.Color(255, 255, 255));
-        delay(melodyCurrentNote.duration/LED_LEN_MELODY);
     }
     NeoPixel_M.show();
   }
 }
+
+void playBassLEDs(){
+  if (pixelBass == LED_LEN_BASS){
+    pixelBass = 0;
+  }
+
+  if (bassCurrentNote.pitch < 7){
+    switch (bassCurrentNote.duration){
+    case 1000:
+      NeoPixel_B.fill(100, 0, LED_LEN_BASS);
+      break;
+    case 2000:
+      NeoPixel_B.fill(200, 0, LED_LEN_BASS);
+      break;
+    case 4000:
+      NeoPixel_B.fill(50, 0, LED_LEN_BASS);
+      break;    
+    default:
+      NeoPixel_B.fill(150, 0, LED_LEN_BASS);
+      break;
+    }
+    NeoPixel_B.show();
+    pixelBass++;
+  } else {
+    for(int pixel = 0; pixel<LED_LEN_BASS; pixel++){
+        NeoPixel_B.setPixelColor(pixel, NeoPixel_B.Color(0, 0, 0));
+    }
+    NeoPixel_B.show();
+  }
+}
+
 
 void defineColorBass(float octave, float pitch, float duration){
   //dependig on sensor 2 speed, change the color of the leds in strips BASS
@@ -304,26 +343,24 @@ void defineColorBass(float octave, float pitch, float duration){
   }
 }
 
-
-void playNote(sensors_event_t a1, sensors_event_t g1, sensors_event_t a2, sensors_event_t g2){
-  float totalAcc1 = sqrt(a1.acceleration.x * a1.acceleration.x + a1.acceleration.y * a1.acceleration.y);
+void playBassNote(sensors_event_t a2, sensors_event_t g2){
   float totalAcc2 = sqrt(a2.acceleration.x * a2.acceleration.x + a2.acceleration.y * a2.acceleration.y);
-  float totalSpin1 = sqrt(g1.gyro.x * g1.gyro.x + g1.gyro.y * g1.gyro.y);
   float totalSpin2 = sqrt(g2.gyro.x * g2.gyro.x + g2.gyro.y * g2.gyro.y);
 
-  defineMelodyNote(totalAcc1, totalSpin1);
   defineBassNote(totalAcc2, totalSpin2);
-  //buzzer 1 -> melodia
-  tone(BUZZZER_PIN_1, bb_scale[melodyCurrentNote.octave][melodyCurrentNote.pitch]);
-  //buzzer 2 -> bass
   tone(BUZZZER_PIN_2, bb_scale[bassCurrentNote.octave][bassCurrentNote.pitch]);
+  bassCurrentNote.is_playing = true;
+  playBassLEDs();
+}
 
-  //colocar a lógica de cores aqui, para utilizar as informações de oitava e pitch de cada buzzer
-  //buzzer 1 -> melodia
-  defineColorMelody(melodyCurrentNote.octave, melodyCurrentNote.pitch, melodyCurrentNote.duration);
+void playMelodyNote(sensors_event_t a1, sensors_event_t g1){
+  float totalAcc1 = sqrt(a1.acceleration.x * a1.acceleration.x + a1.acceleration.y * a1.acceleration.y);
+  float totalSpin1 = sqrt(g1.gyro.x * g1.gyro.x + g1.gyro.y * g1.gyro.y);
 
-  //buzzer 2 -> bass
-  //defineColorBass(bassCurrentNote.octave, bassCurrentNote.pitch, bassCurrentNote.duration);
+  defineMelodyNote(totalAcc1, totalSpin1);
+  tone(BUZZZER_PIN_1, bb_scale[melodyCurrentNote.octave][melodyCurrentNote.pitch]);
+  melodyCurrentNote.is_playing = true;
+  playMelodyLEDs();
 }
 
 /**
@@ -390,7 +427,7 @@ void printMPUData(sensors_event_t a, sensors_event_t g, sensors_event_t temp){
   Serial.println(temp.temperature);
 }
 
-void setup(void) {
+void setup() {
   Serial.begin(115200);
   while (!Serial)
     delay(10);
@@ -398,23 +435,42 @@ void setup(void) {
   setMPUConfigurations();
   NeoPixel_B.begin();
   NeoPixel_M.begin();
+
   delay(100);
 }
 
+unsigned long currentMillis = millis();
 void loop() {
-  /* Get new sensor events with the readings */
-  sensors_event_t a1, g1, temp1;
-  sensors_event_t a2, g2, temp2;
-  mpu1.getEvent(&a1, &g1, &temp1);
-  mpu2.getEvent(&a2, &g2, &temp2);
+  currentMillis = millis();
+  if (currentMillis - previousMillisMelody >= melodyCurrentNote.duration) {
+    Serial.println("mel");
+    previousMillisMelody = currentMillis;
+    if (melodyCurrentNote.is_playing)
+    {
+    Serial.println("mel notone");
+      noTone(BUZZZER_PIN_1);
+      melodyCurrentNote.is_playing = false;
+    }
+    sensors_event_t a1, g1, temp1;
+    mpu1.getEvent(&a1, &g1, &temp1);
+    //printMPUData(a1, g1, temp1);
+    playMelodyNote(a1, g1);
+  }
 
-  /*sets a pitch to the buzzer according to the rotation on the gyroscope*/
-  playNote(a1, g1, a2, g2);
+  if (currentMillis - previousMillisBass >= bassCurrentNote.duration) {
+    Serial.println("bass");
+    previousMillisBass = currentMillis;
+    if (bassCurrentNote.is_playing)
+    {
+    Serial.println("bass notone");
+      noTone(BUZZZER_PIN_2);
+      bassCurrentNote.is_playing = false;
+    }
+    sensors_event_t a2, g2, temp2;
+    mpu2.getEvent(&a2, &g2, &temp2);
+    //printMPUData(a2, g2, temp2);
+    playBassNote(a2, g2);
+  }
 
-  //printMPUData(a1, g1, temp1);
-  //printMPUData(a2, g2, temp2);
-  
-  //delay(melodyCurrentNote.duration);
-  noTone(BUZZZER_PIN_1);
-  noTone(BUZZZER_PIN_2);
+  delay(50);
 }
